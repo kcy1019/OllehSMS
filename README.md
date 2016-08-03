@@ -1,6 +1,6 @@
 # OllehSMS
 
-Python API wrapper for KT(Olleh) Web SMS Sending Service.
+Python2/3 API wrapper for KT(Olleh) Web SMS Sending Service.
 
 ## USAGE
 
