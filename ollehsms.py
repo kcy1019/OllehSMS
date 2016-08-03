@@ -14,10 +14,12 @@ Python API wrapper for KT(Olleh) Web SMS Sending Service.
 
 ## USAGE
 
-    msg = r'Let's send SMS programatically!'
+    from ollehsms import OllehSMS
+
+    msg = u'Let\'s send SMS programatically!'
     sms = OllehSMS()
     print 'auth', sms.auth('my_id', 'some_fancy_strong_password')
-    print 'send', sms.send(u'my_UNICODE_msg', ['010-XXXX-XXXX'])
+    print 'send', sms.send(msg, ['010-XXXX-XXXX'])
 
 """
 
@@ -51,18 +53,21 @@ class OllehSMS:
             pw (str): olleh.com password.
 
         Returns:
-            bool: True if successful.
+            bool: True if successful, False otherwise.
         """
         auth_payload = {'userId': id,
                         'password': pw,
                         'checkSavedId': 'Y'}
         self.sess.get(OllehSMS.URL_INIT)
         self.sess.post(OllehSMS.URL_AUTH, data=auth_payload)
+
         response = self.sess.get(OllehSMS.URL_REMAINING_FREE).text
         self.free = OllehSMS.PATTERN_REMAINING_FREE.search(response)
+
         if not self.free:
             return False
         self.free = int(self.free.group(1))
+
         return True
 
     def send(self, msg, recipients):
@@ -84,11 +89,12 @@ class OllehSMS:
                        'dataLen': size,
                        'mmsArea': '<body></body>'}
 
-        if size > 73:
+        if size > OllehSMS.SMS_MAXIMUM_LENGTH:
             msg_payload['msgType'] = 'LTS'
 
         r = self.sess.post(OllehSMS.URL_SEND_ENQUEUE, data=msg_payload).text
         r = OllehSMS.PATTERN_MY_PHONE.search(r)
+
         if not r:
             return False
         else:
@@ -98,7 +104,7 @@ class OllehSMS:
         confirm_url = OllehSMS.URL_SEND_CONFIRM
         self.free -= 1
 
-        if size > 73:  # In case of LMS
+        if size > OllehSMS.SMS_MAXIMUM_LENGTH:  # In case of LMS
             msg_payload['MsgDetailType'] = 'D00'
             confirm_url = OllehSMS.URL_SEND_CONFIRM.replace('smsSend', 'mmsSend')
             self.free -= 1  # LMS consumes additional Free SMS count.
